@@ -1,6 +1,6 @@
-#RPS Multiplayer
+# RPS Multiplayer
 
-##Outline
+## Outline
 
 -Player Area
   -Enter Name / Show Current Player
@@ -26,7 +26,7 @@
   -Gifs to go with choices, combat and winning/losing
   -Add additional games or refactor for react
 
-##Database Structure
+## Database Structure
 
 -root
   -player(unique per player?)
