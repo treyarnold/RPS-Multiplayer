@@ -1,6 +1,6 @@
 #RPS Multiplayer
 
-##Show Route
+##Outline
 
 -Player Area
   -Enter Name / Show Current Player
@@ -25,3 +25,17 @@
   -Chat
   -Gifs to go with choices, combat and winning/losing
   -Add additional games or refactor for react
+
+##Database Structure
+
+-root
+  -player(unique per player?)
+    -name
+    -wins
+    -losses
+  -current game
+    -players currently playing
+    -game state
+    -player choices
+  -connected info
+    -playername connected
