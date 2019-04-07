@@ -12,7 +12,7 @@
   - Show when players disconnect
 
 - Back-end
-  - Connect to Firebase
+  - ~~Connect to Firebase~~
   - Read current game state. If player1 is taken, show player2 as the login option
   - Track whose turn it is
   - Move control to active player
