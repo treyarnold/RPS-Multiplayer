@@ -9,3 +9,22 @@ const config = {
 firebase.initializeApp(config);
 
 const DB = firebase.database();
+
+const app = {
+  showPlayer: function (player, playerClass) {
+    console.log(player, playerClass);
+  }
+
+};
+
+$(".player").on("click", event => {
+  console.log(event);
+  event.preventDefault();
+  const playerNumber = event.target.id;
+  const player = {
+    name: $(`#player${playerNumber}Name`).val().trim(),
+  }
+  console.log(player.name);
+  DB.ref("players").push(player);
+  app.showPlayer(player, `.player${playerNumber}`);
+})
