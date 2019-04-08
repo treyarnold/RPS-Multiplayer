@@ -34,10 +34,9 @@ const game = {
           placeholder="Player ${playerNumber}" id="player${playerNumber}Name">
         <button class="input-group-append btn btn-outline-success player" 
           type="submit" id="${playerNumber}">Submit</button>
-      </form>`
+      </form>`;
     $(playerID).empty();
     $(playerID).append(display);
-    console.log(disabled);
     if (disabled) $(`#${playerNumber}`).prop("disabled", true)
   },
 
@@ -47,8 +46,36 @@ const game = {
     $(playerID).append(newPlayerHeader);
   },
 
+  playerTurn: function (player) {
+    console.log("playerTurn", player);
+    const id = `#${player}Div`;
+    $(id).addClass("playerTurn");
+  },
+
+  addButtonListeners: function (player) {
+    $(`#${player}Rock`).on("click", () => {
+      DB.ref(`gameState/playerChoices/${player}`).set({playerChoice: "Rock"})         
+    })
+    $(`#${player}Paper`).on("click", () => {
+      DB.ref(`gameState/playerChoices/${player}`).set({playerChoice: "Paper"})         
+    })
+    $(`#${player}Scissors`).on("click", () => {
+      DB.ref(`gameState/playerChoices/${player}`).set({playerChoice: "Scissors"})         
+    })
+  },
+
+  disableButtons: function (buttonID) {
+    $(`#${buttonID}Rock`).prop("disabled", true);
+    $(`#${buttonID}Paper`).prop("disabled", true);
+    $(`#${buttonID}Scissors`).prop("disabled", true);
+  },
+
   startGame: function () {
-    console.log(this.localPlayerNumber, this.localID);
+    this.playerTurn("player1");
+    if (this.localPlayerNumber === "1") {
+      this.addButtonListeners("player1");
+      this.disableButtons("player2");
+    }
   },
 };
 
@@ -78,7 +105,6 @@ DB.ref("players").on("value", snapshot => {
       game.showPlayer(childSnapshot.val().playerName, "#player2");
     }
   });
-  console.log(game.localID);
   if (!player1) {
     if (game.localPlayerNumber) game.addPlayerInput("1", true);
     else game.addPlayerInput("1", false);
@@ -89,4 +115,3 @@ DB.ref("players").on("value", snapshot => {
   }
   if (player1 && player2) game.startGame();
 });
-
