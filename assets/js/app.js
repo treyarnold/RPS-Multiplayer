@@ -17,33 +17,38 @@ connectedRef.on("value", snapshot => {
     const con = connectionsRef.push(true);
     game.localID = con.key;
     con.onDisconnect().remove();
-
   }
 })
 
 const game = {
   localPlayerNumber: undefined,
   wins: 0,
-  lossed: 0,
+  losses: 0,
   localID: undefined,
 
-  addPlayerInput: function (playerNumber) {
+  addPlayerInput: function (playerNumber, disabled) {
     let playerID = `#player${playerNumber}`;
     let display =
       `<form class="input-group mb-3">
-      <input type="text" class="form-control text-center" 
-        placeholder="Player ${playerNumber}" id="player${playerNumber}Name">
-      <button class="input-group-append btn btn-outline-success player" 
-        type="submit" id="${playerNumber}">Submit</button>
-    </form>`
+        <input type="text" class="form-control text-center" 
+          placeholder="Player ${playerNumber}" id="player${playerNumber}Name">
+        <button class="input-group-append btn btn-outline-success player" 
+          type="submit" id="${playerNumber}">Submit</button>
+      </form>`
     $(playerID).empty();
     $(playerID).append(display);
+    console.log(disabled);
+    if (disabled) $(`#${playerNumber}`).prop("disabled", true)
   },
 
   showPlayer: function (playerName, playerID) {
     $(playerID).empty();
     const newPlayerHeader = $("<h2>").text(playerName);
     $(playerID).append(newPlayerHeader);
+  },
+
+  startGame: function () {
+    console.log(this.localPlayerNumber, this.localID);
   },
 };
 
@@ -61,11 +66,6 @@ $(document).on("click", ".player", event => {
 });
 
 DB.ref("players").on("value", snapshot => {
-  if (snapshot.val() === null) {
-    game.addPlayerInput("1");
-    game.addPlayerInput("2");
-    return true;
-  }
   let player1 = false;
   let player2 = false;
   snapshot.forEach(childSnapshot => {
@@ -78,7 +78,15 @@ DB.ref("players").on("value", snapshot => {
       game.showPlayer(childSnapshot.val().playerName, "#player2");
     }
   });
-if (!player1) game.addPlayerInput("1")
-if (!player2) game.addPlayerInput("2")  
+  console.log(game.localID);
+  if (!player1) {
+    if (game.localPlayerNumber) game.addPlayerInput("1", true);
+    else game.addPlayerInput("1", false);
+  }
+  if (!player2) {
+    if (game.localPlayerNumber) game.addPlayerInput("2", true);
+    else game.addPlayerInput("2", false);
+  }
+  if (player1 && player2) game.startGame();
 });
 
