@@ -25,6 +25,8 @@ const game = {
   wins: 0,
   losses: 0,
   localID: undefined,
+  player1Choice: undefined,
+  player2Choice: undefined,
 
   addPlayerInput: function (playerNumber, disabled) {
     let playerID = `#player${playerNumber}`;
@@ -47,20 +49,29 @@ const game = {
   },
 
   playerTurn: function (player) {
-    console.log("playerTurn", player);
+    const id = `#${player}Div`;
+    $(id).removeClass("waitingForTurn");
+    $(id).addClass("playerTurn");
+  },
+
+  waitingForTurn: function (player) {
     const id = `#${player}Div`;
     $(id).addClass("playerTurn");
+    $(id).addClass("waitingForTurn");
   },
 
   addButtonListeners: function (player) {
     $(`#${player}Rock`).on("click", () => {
-      DB.ref(`gameState/playerChoices/${player}`).set({playerChoice: "Rock"})         
+      DB.ref(`gameState/playerChoices/${player}`).set({ playerChoice: "Rock" });
+      this.switchPlayers();
     })
     $(`#${player}Paper`).on("click", () => {
-      DB.ref(`gameState/playerChoices/${player}`).set({playerChoice: "Paper"})         
+      DB.ref(`gameState/playerChoices/${player}`).set({ playerChoice: "Paper" });
+      this.switchPlayers();
     })
     $(`#${player}Scissors`).on("click", () => {
-      DB.ref(`gameState/playerChoices/${player}`).set({playerChoice: "Scissors"})         
+      DB.ref(`gameState/playerChoices/${player}`).set({ playerChoice: "Scissors" });
+      this.switchPlayers();
     })
   },
 
@@ -70,11 +81,43 @@ const game = {
     $(`#${buttonID}Scissors`).prop("disabled", true);
   },
 
+  enableButtons: function (buttonID) {
+    $(`#${buttonID}Rock`).prop("disabled", false);
+    $(`#${buttonID}Paper`).prop("disabled", false);
+    $(`#${buttonID}Scissors`).prop("disabled", false);
+  },
+
   startGame: function () {
     this.playerTurn("player1");
+    this.waitingForTurn("player2");
+    $("#combatDiv").empty();
     if (this.localPlayerNumber === "1") {
       this.addButtonListeners("player1");
-      this.disableButtons("player2");
+      $("#combatDiv").append("<h2>").text("It is your Turn");
+    } else if (this.localPlayerNumber === "2") {
+      this.disableButtons("player1");
+      $("#combatDiv").append("<h2>").text("Waiting for Player 1 to choose");
+      DB.ref("gameState/playerChoices").on("value", () => this.switchPlayers());
+    }
+    this.disableButtons("player2");
+  },
+  
+  switchPlayers: function () {
+    let p1 = undefined;
+    DB.ref("gameState/playerChoices/player1").once("value", snapshot => {
+      p1 = snapshot.val().playerChoice;
+    })
+    this.playerTurn("player2")
+    this.waitingForTurn("player1");
+    $("#combatDiv").empty();
+    if (this.localPlayerNumber === "1") {
+      this.disableButtons("player1");
+      $("#combatDiv").append("<h2>").text("Waiting for Player 2 to Choose");
+      $("#combatDiv").append("<h2>").text(`You Chose ${p1}`);
+    } else if (this.localPlayerNumber === "2") {
+      $("#combatDiv").append("<h2>").text("It is your Turn");
+      this.enableButtons("player2");
+      this.addButtonListeners("player2")
     }
   },
 };

@@ -2,3 +2,8 @@
   background-color: rgb(176, 253, 211);
   border-radius: 25px;
 }
+
+.waitingForTurn {
+  background-color: rgb(248, 253, 176);
+  border-radius: 25px;
+}
