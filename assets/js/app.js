@@ -26,6 +26,8 @@ const game = {
   wins: 0,
   losses: 0,
   localID: undefined,
+  player1Name: "", 
+  player2Name: "",
   player1Choice: undefined,
   player2Choice: undefined,
 
@@ -61,6 +63,11 @@ const game = {
     $(id).addClass("waitingForTurn");
   },
 
+  removePlayerContext: function () {
+    $("#player1Div").removeClass("waitingForTurn");
+    $("#player2Div").removeClass("playerTurn");
+  },
+
   addButtonListeners: function (player) {
     $(`#${player}Rock`).on("click", () => {
       DB.ref(`playerChoices/${player}`).set({ playerChoice: "Rock" });
@@ -92,6 +99,7 @@ const game = {
   },
 
   startGame: function () {
+    console.log(this.player1Name, this.player2Name);
     this.showPlayerTurn("player1");
     this.showWaitingForTurn("player2");
     $("#combatDiv").empty();
@@ -119,14 +127,46 @@ const game = {
     }
   },
 
-  determineResults: function () {
+  getResults: function () {
     DB.ref("playerChoices/player1").once("value", snapshot => {
       this.player1Choice = snapshot.val().playerChoice;
+      DB.ref("playerChoices/player2").once("value", snapshot => {
+        this.player2Choice = snapshot.val().playerChoice;
+        this.determineResults();
+      })
     })
-    DB.ref("playerChoices/player2").once("value", snapshot => {
-      this.player2Choice = snapshot.val().playerChoice;
-    })
-  }
+  },
+
+  displayTie: function () {
+    console.log("tie");
+    $("#player1Div").addClass("winner");
+    $("#player2Div").addClass("winner");
+  },
+
+  player1Wins: function () {
+    console.log("P1 Wins");
+    $("#player2Div").addClass("loser");
+  },
+  
+  player2Wins: function () {
+    console.log("P2 Wins");
+    $("#player2Div").addClass("winner");
+    $("#player1Div").addClass("loser");
+  },
+
+  determineResults: function () {
+    this.disableButtons("player2");
+    this.removePlayerContext();
+    if (this.player1Choice === this.player2Choice) {
+      this.displayTie()
+    } else if ((this.player1Choice === "Rock") && (this.player2Choice === "Scissors") ||
+      (this.player1Choice === "Paper") && (this.player2Choice === "Rock") ||
+      (this.player1Choice === "Scissors" && (this.player2Choice === "Paper"))) {
+      this.player1Wins();
+    } else {
+      this.player2Wins();
+    }
+  },
 };
 
 game.addButtonListeners("player1");
@@ -148,10 +188,7 @@ $(document).on("click", ".player", event => {
 });
 
 gameState.on("value", snapshot => {
-  console.log(snapshot.val());
-  console.log(snapshot.val() !== null);
   if (snapshot.val() !== null) {
-    console.log("in if");
     const currentPhase = snapshot.val().phase;
     switch (currentPhase) {
       case "player1Turn":
@@ -161,7 +198,7 @@ gameState.on("value", snapshot => {
         game.switchPlayers();
         break;
       case "determineResults":
-        game.determineResults();
+        game.getResults();
         break;
     }
   }
@@ -173,11 +210,13 @@ DB.ref("players").on("value", snapshot => {
   snapshot.forEach(childSnapshot => {
     if (childSnapshot.val().playerNumber === "player1") {
       player1 = true;
-      game.showPlayer(childSnapshot.val().playerName, "#player1");
+      game.player1Name = childSnapshot.val().playerName;
+      game.showPlayer(game.player1Name, "#player1");
     }
     if (childSnapshot.val().playerNumber === "player2") {
       player2 = true;
-      game.showPlayer(childSnapshot.val().playerName, "#player2");
+      game.player2Name = childSnapshot.val().playerName;
+      game.showPlayer(game.player2Name, "#player2");
     }
   });
   if (!player1) {
@@ -188,5 +227,7 @@ DB.ref("players").on("value", snapshot => {
     if (game.localPlayerNumber) game.addPlayerInput("2", true);
     else game.addPlayerInput("2", false);
   }
-  if (player1 && player2) gameState.set({ phase: "player1Turn" });
+  if (player1 && player2) {
+    gameState.set({ phase: "player1Turn" });
+  }
 });
