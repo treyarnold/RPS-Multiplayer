@@ -17,7 +17,9 @@ connectedRef.on("value", snapshot => {
   if (snapshot.val()) {
     const con = connectionsRef.push(true);
     game.localID = con.key;
-    con.onDisconnect().remove();
+    con.onDisconnect().remove(() => {
+      gameState.remove();
+    });
   }
 })
 
@@ -25,8 +27,9 @@ const game = {
   localPlayerNumber: undefined,
   wins: 0,
   losses: 0,
+  ties: 0,
   localID: undefined,
-  player1Name: "", 
+  player1Name: "",
   player2Name: "",
   player1Choice: undefined,
   player2Choice: undefined,
@@ -52,19 +55,24 @@ const game = {
   },
 
   showPlayerTurn: function (player) {
+    console.log("show player Turn")
     const id = `#${player}Div`;
     $(id).removeClass("waitingForTurn");
     $(id).addClass("playerTurn");
   },
 
   showWaitingForTurn: function (player) {
+    console.log("show waiting turn")
     const id = `#${player}Div`;
     $(id).removeClass("playerTurn");
     $(id).addClass("waitingForTurn");
   },
 
   removePlayerContext: function () {
+    console.log("remove context");
     $("#player1Div").removeClass("waitingForTurn");
+    $("#player1Div").removeClass("playerTurn");
+    $("#player2Div").removeClass("waitingForTurn");
     $("#player2Div").removeClass("playerTurn");
   },
 
@@ -99,15 +107,13 @@ const game = {
   },
 
   startGame: function () {
-    console.log(this.player1Name, this.player2Name);
     this.showPlayerTurn("player1");
     this.showWaitingForTurn("player2");
-    $("#combatDiv").empty();
     if (this.localPlayerNumber === "1") {
-      $("#combatDiv").append("<h2>").text("It is your Turn");
+      $("#combatDiv").append("<h2>It is your Turn</h2>");
       this.enableButtons("player1");
     } else if (this.localPlayerNumber === "2") {
-      $("#combatDiv").append("<h2>").text("Waiting for Player 1 to choose");
+      $("#combatDiv").append("<h2>Waiting for Player 1 to choose</h2>");
     }
   },
 
@@ -119,10 +125,10 @@ const game = {
     $("#combatDiv").empty();
     if (this.localPlayerNumber === "1") {
       this.disableButtons("player1");
-      $("#combatDiv").append("<h2>").text("Waiting for Player 2 to Choose");
-      $("#combatDiv").append("<h2>").text(`You Chose ${player1Choice}`);
+      $("#combatDiv").append("<h2>Waiting for Player 2 to Choose</h2>");
+      $("#combatDiv").append(`<h2>You Chose ${player1Choice}</h2>`);
     } else if (this.localPlayerNumber === "2") {
-      $("#combatDiv").append("<h2>").text("It is your Turn");
+      $("#combatDiv").append("<h2>It is your Turn</h2>");
       this.enableButtons("player2");
     }
   },
@@ -138,27 +144,46 @@ const game = {
   },
 
   displayTie: function () {
-    console.log("tie");
-    $("#player1Div").addClass("winner");
-    $("#player2Div").addClass("winner");
+    $("#combatDiv").append("<h2>It is a Tie!</h2>");
+    this.tie++;
+    DB.ref(`players/${this.localID}`).update({ ties: this.ties });
   },
 
   player1Wins: function () {
-    console.log("P1 Wins");
-    $("#player2Div").addClass("loser");
+    $("#combatDiv").append(`<h2>${this.player1Name} Wins!</h2>`);
+    if (this.localPlayerNumber === "1") {
+      this.wins++;
+    } else {
+      this.losses++
+      DB.ref(`players/${this.localID}`).update({ losses: this.losses });
+    }
   },
-  
+
   player2Wins: function () {
-    console.log("P2 Wins");
-    $("#player2Div").addClass("winner");
-    $("#player1Div").addClass("loser");
+    $("#combatDiv").append(`<h2>${this.player2Name} Wins!</h2>`);
+    if (this.localPlayerNumber === "2") {
+      this.wins++;
+      DB.ref(`players/${this.localID}`).update({ wins: this.wins });
+    } else {
+      this.losses++
+      DB.ref(`players/${this.localID}`).update({ losses: this.losses });
+    }
+  },
+
+  displayResults: function () {
+    const display =
+      `<h2>${this.player1Name} Chose ${this.player1Choice}</h2>
+      <h2>${this.player2Name} Chose ${this.player2Choice}</h2>`
+    $("#combatDiv").append(display);
   },
 
   determineResults: function () {
+    $("#combatDiv").empty();
     this.disableButtons("player2");
     this.removePlayerContext();
+    this.displayResults();
     if (this.player1Choice === this.player2Choice) {
-      this.displayTie()
+      this.displayTie();
     } else if ((this.player1Choice === "Rock") && (this.player2Choice === "Scissors") ||
       (this.player1Choice === "Paper") && (this.player2Choice === "Rock") ||
       (this.player1Choice === "Scissors" && (this.player2Choice === "Paper"))) {
@@ -182,6 +207,7 @@ $(document).on("click", ".player", event => {
     playerNumber: `player${playerNumber}`,
     wins: 0,
     losses: 0,
+    ties: 0,
   };
   game.localPlayerNumber = playerNumber;
   DB.ref(`players/${game.localID}`).update(player);
@@ -220,10 +246,12 @@ DB.ref("players").on("value", snapshot => {
     }
   });
   if (!player1) {
+    game.removePlayerContext();
     if (game.localPlayerNumber) game.addPlayerInput("1", true);
     else game.addPlayerInput("1", false);
   }
   if (!player2) {
+    game.removePlayerContext();
     if (game.localPlayerNumber) game.addPlayerInput("2", true);
     else game.addPlayerInput("2", false);
   }
